@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.46.1">
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_1" name="Процесс выдачи IT-оборудования (AS-IS)" processRef="Process_1" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_User" name="Пользователь">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_User_Submit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>CatchEvent_GetNumber</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>CatchEvent_Receive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_Rate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_RateMerge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_User</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_User_Rate</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_TP" name="1-я линия ТП">
+        <bpmn:flowNodeRef>Task_TP_Register</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_TP_CreateRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_TP_Issue</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_TP_Close</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Supply" name="Отдел снабжения">
+        <bpmn:flowNodeRef>Task_Supply_Accept</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Supply_Check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_Available</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Supply_OrderVendor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Supply_AcceptEquip</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_Merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Supply_CallLogistics</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Vendor" name="Поставщик">
+        <bpmn:flowNodeRef>ReceiveTask_Vendor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Vendor_Deliver</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Logistics" name="Логистика">
+        <bpmn:flowNodeRef>Task_Logistics_Deliver</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="StartEvent_1" name="Возникла потребность в IT-оборудовании">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_User_Submit" name="Подаёт заявку (почта / телефон)">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_TP_Register" name="Регистрирует обращение в Системе №1 и выдаёт номер">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:intermediateCatchEvent id="CatchEvent_GetNumber" name="Получает номер обращения">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageDef_GetNumber" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Task_TP_CreateRequest" name="Создаёт заявку на оборудование в Системе №2">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_Supply_Accept" name="Принимает заявку в Системе №2 (почта + ЛК)">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_Supply_Check" name="Проверяет наличие в Системе №3">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_Available" name="Оборудование есть?">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+      <bpmn:outgoing>Flow_9</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sendTask id="Task_Supply_OrderVendor" name="Направляет заявку на закупку поставщику (почта)">
+      <bpmn:incoming>Flow_9</bpmn:incoming>
+      <bpmn:outgoing>Flow_10</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:receiveTask id="ReceiveTask_Vendor" name="Получает заявку на закупку">
+      <bpmn:incoming>Flow_10</bpmn:incoming>
+      <bpmn:outgoing>Flow_11</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:userTask id="Task_Supply_AcceptEquip" name="Проводит приём оборудования в Системе №3">
+      <bpmn:incoming>Flow_12</bpmn:incoming>
+      <bpmn:outgoing>Flow_13</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_Merge">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+      <bpmn:incoming>Flow_13</bpmn:incoming>
+      <bpmn:outgoing>Flow_14</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_Supply_CallLogistics" name="Вызывает логистику">
+      <bpmn:incoming>Flow_14</bpmn:incoming>
+      <bpmn:outgoing>Flow_15</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_Logistics_Deliver" name="Доставляет оборудование в 1-ю линию ТП">
+      <bpmn:incoming>Flow_15</bpmn:incoming>
+      <bpmn:outgoing>Flow_16</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_TP_Issue" name="Выдаёт оборудование пользователю">
+      <bpmn:incoming>Flow_16</bpmn:incoming>
+      <bpmn:outgoing>Flow_17</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_TP_Close" name="Закрывает заявку в Системе №1 и Системе №2">
+      <bpmn:incoming>Flow_17</bpmn:incoming>
+      <bpmn:outgoing>Flow_18</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:intermediateCatchEvent id="CatchEvent_Receive" name="Получает оборудование">
+      <bpmn:incoming>Flow_18</bpmn:incoming>
+      <bpmn:outgoing>Flow_19</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageDef_Receive" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gateway_Rate" name="Хочет оценить?">
+      <bpmn:incoming>Flow_19</bpmn:incoming>
+      <bpmn:outgoing>Flow_20</bpmn:outgoing>
+      <bpmn:outgoing>Flow_22</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:exclusiveGateway id="Gateway_RateMerge">
+      <bpmn:incoming>Flow_21</bpmn:incoming>
+      <bpmn:incoming>Flow_22</bpmn:incoming>
+      <bpmn:outgoing>Flow_23</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="EndEvent_User" name="Заявка завершена">
+      <bpmn:incoming>Flow_23</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:dataStoreReference id="DataStore_System1" name="Система №1 (обращения)" />
+    <bpmn:dataStoreReference id="DataStore_System2" name="Система №2 (заявки на оборудование)" />
+    <bpmn:dataStoreReference id="DataStore_System3" name="Система №3 (склад / каталог)" />
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_User_Submit" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_User_Submit" targetRef="Task_TP_Register" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_TP_Register" targetRef="CatchEvent_GetNumber" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="CatchEvent_GetNumber" targetRef="Task_TP_CreateRequest" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Task_TP_CreateRequest" targetRef="Task_Supply_Accept" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_Supply_Accept" targetRef="Task_Supply_Check" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Task_Supply_Check" targetRef="Gateway_Available" />
+    <bpmn:sequenceFlow id="Flow_8" name="Да" sourceRef="Gateway_Available" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_9" name="Нет" sourceRef="Gateway_Available" targetRef="Task_Supply_OrderVendor" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Task_Supply_OrderVendor" targetRef="ReceiveTask_Vendor" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="ReceiveTask_Vendor" targetRef="Task_Vendor_Deliver" />
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Task_Vendor_Deliver" targetRef="Task_Supply_AcceptEquip" />
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="Task_Supply_AcceptEquip" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_14" sourceRef="Gateway_Merge" targetRef="Task_Supply_CallLogistics" />
+    <bpmn:sequenceFlow id="Flow_15" sourceRef="Task_Supply_CallLogistics" targetRef="Task_Logistics_Deliver" />
+    <bpmn:sequenceFlow id="Flow_16" sourceRef="Task_Logistics_Deliver" targetRef="Task_TP_Issue" />
+    <bpmn:sequenceFlow id="Flow_17" sourceRef="Task_TP_Issue" targetRef="Task_TP_Close" />
+    <bpmn:sequenceFlow id="Flow_18" sourceRef="Task_TP_Close" targetRef="CatchEvent_Receive" />
+    <bpmn:sequenceFlow id="Flow_19" sourceRef="CatchEvent_Receive" targetRef="Gateway_Rate" />
+    <bpmn:sequenceFlow id="Flow_20" name="Да" sourceRef="Gateway_Rate" targetRef="Task_User_Rate" />
+    <bpmn:sequenceFlow id="Flow_21" sourceRef="Task_User_Rate" targetRef="Gateway_RateMerge" />
+    <bpmn:sequenceFlow id="Flow_22" name="Нет" sourceRef="Gateway_Rate" targetRef="Gateway_RateMerge" />
+    <bpmn:sequenceFlow id="Flow_23" sourceRef="Gateway_RateMerge" targetRef="EndEvent_User" />
+    <bpmn:userTask id="Task_Vendor_Deliver" name="Доставляет оборудование">
+      <bpmn:incoming>Flow_11</bpmn:incoming>
+      <bpmn:outgoing>Flow_12</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_User_Rate" name="Выставляет оценку сервиса ТП">
+      <bpmn:incoming>Flow_20</bpmn:incoming>
+      <bpmn:outgoing>Flow_21</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:association id="Assoc_TP_Register_S1" sourceRef="Task_TP_Register" targetRef="DataStore_System1" />
+    <bpmn:association id="Assoc_TP_Create_S2" sourceRef="Task_TP_CreateRequest" targetRef="DataStore_System2" />
+    <bpmn:association id="Assoc_S2_Supply_Accept" sourceRef="DataStore_System2" targetRef="Task_Supply_Accept" />
+    <bpmn:association id="Assoc_S3_Supply_Check" sourceRef="DataStore_System3" targetRef="Task_Supply_Check" />
+    <bpmn:association id="Assoc_Supply_AcceptEquip_S3" sourceRef="Task_Supply_AcceptEquip" targetRef="DataStore_System3" />
+    <bpmn:association id="Assoc_TP_Close_S1" sourceRef="Task_TP_Close" targetRef="DataStore_System1" />
+    <bpmn:association id="Assoc_TP_Close_S2" sourceRef="Task_TP_Close" targetRef="DataStore_System2" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+      <bpmndi:BPMNShape id="Participant_1_di" bpmnElement="Participant_1" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="2880" height="760" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Logistics_di" bpmnElement="Lane_Logistics" isHorizontal="true">
+        <dc:Bounds x="190" y="690" width="2850" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Vendor_di" bpmnElement="Lane_Vendor" isHorizontal="true">
+        <dc:Bounds x="190" y="560" width="2850" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Supply_di" bpmnElement="Lane_Supply" isHorizontal="true">
+        <dc:Bounds x="190" y="340" width="2850" height="220" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_TP_di" bpmnElement="Lane_TP" isHorizontal="true">
+        <dc:Bounds x="190" y="210" width="2850" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_User_di" bpmnElement="Lane_User" isHorizontal="true">
+        <dc:Bounds x="190" y="80" width="2850" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="270" y="127" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="245" y="170" width="86" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_User_Submit_di" bpmnElement="Task_User_Submit">
+        <dc:Bounds x="340" y="105" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_TP_Register_di" bpmnElement="Task_TP_Register">
+        <dc:Bounds x="490" y="235" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CatchEvent_GetNumber_di" bpmnElement="CatchEvent_GetNumber">
+        <dc:Bounds x="652" y="127" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="629" y="96" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_TP_CreateRequest_di" bpmnElement="Task_TP_CreateRequest">
+        <dc:Bounds x="740" y="235" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Supply_Accept_di" bpmnElement="Task_Supply_Accept">
+        <dc:Bounds x="890" y="410" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Supply_Check_di" bpmnElement="Task_Supply_Check">
+        <dc:Bounds x="1040" y="410" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Available_di" bpmnElement="Gateway_Available" isMarkerVisible="true">
+        <dc:Bounds x="1190" y="425" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1172" y="476" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Supply_OrderVendor_di" bpmnElement="Task_Supply_OrderVendor">
+        <dc:Bounds x="1280" y="460" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReceiveTask_Vendor_di" bpmnElement="ReceiveTask_Vendor">
+        <dc:Bounds x="1430" y="585" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Supply_AcceptEquip_di" bpmnElement="Task_Supply_AcceptEquip">
+        <dc:Bounds x="1730" y="460" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Merge_di" bpmnElement="Gateway_Merge" isMarkerVisible="true">
+        <dc:Bounds x="1880" y="425" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Supply_CallLogistics_di" bpmnElement="Task_Supply_CallLogistics">
+        <dc:Bounds x="1970" y="410" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Logistics_Deliver_di" bpmnElement="Task_Logistics_Deliver">
+        <dc:Bounds x="2120" y="725" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_TP_Issue_di" bpmnElement="Task_TP_Issue">
+        <dc:Bounds x="2270" y="235" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_TP_Close_di" bpmnElement="Task_TP_Close">
+        <dc:Bounds x="2420" y="235" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CatchEvent_Receive_di" bpmnElement="CatchEvent_Receive">
+        <dc:Bounds x="2582" y="127" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2555" y="170" width="92" height="30" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Rate_di" bpmnElement="Gateway_Rate" isMarkerVisible="true">
+        <dc:Bounds x="2660" y="120" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2640" y="90" width="90" height="30" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_RateMerge_di" bpmnElement="Gateway_RateMerge" isMarkerVisible="true">
+        <dc:Bounds x="2900" y="120" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_User_di" bpmnElement="EndEvent_User">
+        <dc:Bounds x="2982" y="127" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2960" y="170" width="80" height="30" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Vendor_Deliver_di" bpmnElement="Task_Vendor_Deliver">
+        <dc:Bounds x="1580" y="585" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_User_Rate_di" bpmnElement="Task_User_Rate">
+        <dc:Bounds x="2750" y="105" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="306" y="145" />
+        <di:waypoint x="340" y="145" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="460" y="145" />
+        <di:waypoint x="475" y="145" />
+        <di:waypoint x="475" y="275" />
+        <di:waypoint x="490" y="275" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="610" y="275" />
+        <di:waypoint x="635" y="275" />
+        <di:waypoint x="635" y="145" />
+        <di:waypoint x="652" y="145" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="688" y="145" />
+        <di:waypoint x="715" y="145" />
+        <di:waypoint x="715" y="275" />
+        <di:waypoint x="740" y="275" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="860" y="275" />
+        <di:waypoint x="875" y="275" />
+        <di:waypoint x="875" y="450" />
+        <di:waypoint x="890" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="1010" y="450" />
+        <di:waypoint x="1040" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="1160" y="450" />
+        <di:waypoint x="1190" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="1215" y="425" />
+        <di:waypoint x="1215" y="380" />
+        <di:waypoint x="1905" y="380" />
+        <di:waypoint x="1905" y="425" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1555" y="362" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9">
+        <di:waypoint x="1240" y="450" />
+        <di:waypoint x="1260" y="450" />
+        <di:waypoint x="1260" y="500" />
+        <di:waypoint x="1280" y="500" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1260" y="443" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10">
+        <di:waypoint x="1400" y="500" />
+        <di:waypoint x="1415" y="500" />
+        <di:waypoint x="1415" y="625" />
+        <di:waypoint x="1430" y="625" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11">
+        <di:waypoint x="1550" y="625" />
+        <di:waypoint x="1580" y="625" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12">
+        <di:waypoint x="1700" y="625" />
+        <di:waypoint x="1715" y="625" />
+        <di:waypoint x="1715" y="500" />
+        <di:waypoint x="1730" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13_di" bpmnElement="Flow_13">
+        <di:waypoint x="1850" y="500" />
+        <di:waypoint x="1865" y="500" />
+        <di:waypoint x="1865" y="450" />
+        <di:waypoint x="1880" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_14_di" bpmnElement="Flow_14">
+        <di:waypoint x="1930" y="450" />
+        <di:waypoint x="1970" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15_di" bpmnElement="Flow_15">
+        <di:waypoint x="2030" y="490" />
+        <di:waypoint x="2030" y="765" />
+        <di:waypoint x="2120" y="765" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16_di" bpmnElement="Flow_16">
+        <di:waypoint x="2240" y="765" />
+        <di:waypoint x="2255" y="765" />
+        <di:waypoint x="2255" y="275" />
+        <di:waypoint x="2270" y="275" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17_di" bpmnElement="Flow_17">
+        <di:waypoint x="2390" y="275" />
+        <di:waypoint x="2420" y="275" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_18_di" bpmnElement="Flow_18">
+        <di:waypoint x="2540" y="275" />
+        <di:waypoint x="2565" y="275" />
+        <di:waypoint x="2565" y="145" />
+        <di:waypoint x="2582" y="145" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19_di" bpmnElement="Flow_19">
+        <di:waypoint x="2618" y="145" />
+        <di:waypoint x="2660" y="145" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_20_di" bpmnElement="Flow_20">
+        <di:waypoint x="2710" y="145" />
+        <di:waypoint x="2750" y="145" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2723" y="125" width="14" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_21_di" bpmnElement="Flow_21">
+        <di:waypoint x="2870" y="145" />
+        <di:waypoint x="2900" y="145" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_22_di" bpmnElement="Flow_22">
+        <di:waypoint x="2685" y="170" />
+        <di:waypoint x="2685" y="200" />
+        <di:waypoint x="2925" y="200" />
+        <di:waypoint x="2925" y="170" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2720" y="180" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_23_di" bpmnElement="Flow_23">
+        <di:waypoint x="2950" y="145" />
+        <di:waypoint x="2982" y="145" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Assoc_TP_Register_S1_di" bpmnElement="Assoc_TP_Register_S1">
+        <di:waypoint x="550" y="315" />
+        <di:waypoint x="570" y="880" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Assoc_TP_Create_S2_di" bpmnElement="Assoc_TP_Create_S2">
+        <di:waypoint x="800" y="315" />
+        <di:waypoint x="880" y="880" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Assoc_S2_Supply_Accept_di" bpmnElement="Assoc_S2_Supply_Accept">
+        <di:waypoint x="880" y="880" />
+        <di:waypoint x="950" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Assoc_S3_Supply_Check_di" bpmnElement="Assoc_S3_Supply_Check">
+        <di:waypoint x="1430" y="880" />
+        <di:waypoint x="1100" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Assoc_Supply_AcceptEquip_S3_di" bpmnElement="Assoc_Supply_AcceptEquip_S3">
+        <di:waypoint x="1790" y="540" />
+        <di:waypoint x="1790" y="765" />
+        <di:waypoint x="1430" y="880" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Assoc_TP_Close_S1_di" bpmnElement="Assoc_TP_Close_S1">
+        <di:waypoint x="2480" y="315" />
+        <di:waypoint x="1770" y="650" />
+        <di:waypoint x="570" y="880" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Assoc_TP_Close_S2_di" bpmnElement="Assoc_TP_Close_S2">
+        <di:waypoint x="2480" y="315" />
+        <di:waypoint x="1960" y="650" />
+        <di:waypoint x="880" y="880" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="DataStore_System1_di" bpmnElement="DataStore_System1">
+        <dc:Bounds x="540" y="880" width="60" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="495" y="935" width="150" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataStore_System2_di" bpmnElement="DataStore_System2">
+        <dc:Bounds x="850" y="880" width="60" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="790" y="935" width="180" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataStore_System3_di" bpmnElement="DataStore_System3">
+        <dc:Bounds x="1400" y="880" width="60" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1345" y="935" width="170" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
