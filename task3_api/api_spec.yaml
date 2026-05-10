@@ -1,0 +1,231 @@
+openapi: 3.0.3
+info:
+  title: Book Store — Registration API
+  description: |
+    REST API эндпоинт регистрации нового пользователя в Book Store.
+    Вызывается фронтендом при нажатии на кнопку **Register** на форме регистрации.
+  version: 1.0.0
+  contact:
+    name: Никита (тестовое задание)
+
+servers:
+  - url: https://api.bookstore.example.com/v1
+    description: Production
+  - url: https://staging.api.bookstore.example.com/v1
+    description: Staging
+
+paths:
+  /users/register:
+    post:
+      summary: Регистрация нового пользователя
+      description: |
+        Создаёт нового пользователя в системе после прохождения валидации
+        полей формы и проверки reCAPTCHA. Вызывается фронтендом по клику на кнопку
+        **Register** в форме `Register to Book Store`.
+
+        Идемпотентность: метод **не идемпотентный** — повторный вызов с тем же `userName`
+        вернёт `409 Conflict`.
+      operationId: registerUser
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              valid:
+                summary: Корректный запрос
+                value:
+                  firstName: "ivan"
+                  lastName: "ivanov"
+                  userName: "ivan"
+                  password: "P@ssw0rd!"
+                  recaptchaToken: "03AGdBq25...long_token..."
+      responses:
+        '201':
+          description: Пользователь успешно создан.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterSuccessResponse'
+              examples:
+                success:
+                  value:
+                    userId: "8f14e45f-ceea-467a-9575-d09f2c1e8b52"
+                    userName: "ivan"
+                    firstName: "ivan"
+                    lastName: "ivanov"
+                    createdAt: "2026-05-07T10:15:30Z"
+        '400':
+          description: |
+            Ошибка валидации входных данных. Сюда попадают:
+            - отсутствие обязательного поля,
+            - нарушение длины / формата поля,
+            - несоответствие пароля политике сложности,
+            - невалидный или непройденный reCAPTCHA-токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                weakPassword:
+                  summary: Слабый пароль
+                  value:
+                    code: "WEAK_PASSWORD"
+                    message: "Passwords must have at least one non alphanumeric character, one digit ('0'-'9'), one uppercase ('A'-'Z'), one lowercase ('a'-'z'), one special character and Password must be eight characters or longer."
+                    field: "password"
+                recaptchaFailed:
+                  summary: reCAPTCHA не пройдена
+                  value:
+                    code: "RECAPTCHA_FAILED"
+                    message: "Please verify reCaptcha to register!"
+                    field: "recaptchaToken"
+                missingField:
+                  summary: Не заполнено обязательное поле
+                  value:
+                    code: "VALIDATION_ERROR"
+                    message: "Field 'firstName' is required."
+                    field: "firstName"
+        '409':
+          description: Пользователь с таким `userName` уже существует.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                userExists:
+                  value:
+                    code: "USER_EXISTS"
+                    message: "User exists!"
+                    field: "userName"
+        '429':
+          description: |
+            Превышен лимит попыток регистрации с одного IP
+            (защита от brute-force / автоматических регистраций).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                rateLimited:
+                  value:
+                    code: "RATE_LIMITED"
+                    message: "Too many registration attempts. Please try again later."
+        '500':
+          description: Внутренняя ошибка сервера.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                serverError:
+                  value:
+                    code: "INTERNAL_ERROR"
+                    message: "Something went wrong. Please try again later."
+
+components:
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - userName
+        - password
+        - recaptchaToken
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          pattern: "^[A-Za-zА-Яа-яЁё '\\-]+$"
+          description: Имя пользователя. Допустимы буквы (RU/EN), пробел, дефис, апостроф.
+          example: "ivan"
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          pattern: "^[A-Za-zА-Яа-яЁё '\\-]+$"
+          description: Фамилия пользователя.
+          example: "ivanov"
+        userName:
+          type: string
+          minLength: 3
+          maxLength: 30
+          pattern: "^[A-Za-z0-9_.\\-]+$"
+          description: |
+            Логин. Только латиница, цифры и `_`, `.`, `-`. Уникален в системе.
+          example: "ivan"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          description: |
+            Пароль. Должен соответствовать политике сложности:
+            - длина ≥ 8 символов;
+            - минимум 1 строчная буква (a-z);
+            - минимум 1 заглавная буква (A-Z);
+            - минимум 1 цифра (0-9);
+            - минимум 1 спецсимвол (не буква и не цифра).
+          example: "P@ssw0rd!"
+        recaptchaToken:
+          type: string
+          minLength: 1
+          description: |
+            Токен, полученный фронтендом от Google reCAPTCHA после установки галочки
+            "I'm not a robot". Бэкенд верифицирует токен через Google API.
+          example: "03AGdBq25..."
+
+    RegisterSuccessResponse:
+      type: object
+      required: [userId, userName, firstName, lastName, createdAt]
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор созданного пользователя.
+          example: "8f14e45f-ceea-467a-9575-d09f2c1e8b52"
+        userName:
+          type: string
+          description: Логин пользователя.
+          example: "ivan"
+        firstName:
+          type: string
+          example: "ivan"
+        lastName:
+          type: string
+          example: "ivanov"
+        createdAt:
+          type: string
+          format: date-time
+          description: Время создания (UTC, ISO 8601).
+          example: "2026-05-07T10:15:30Z"
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum:
+            - VALIDATION_ERROR
+            - WEAK_PASSWORD
+            - RECAPTCHA_FAILED
+            - USER_EXISTS
+            - RATE_LIMITED
+            - INTERNAL_ERROR
+          description: Машинно-читаемый код ошибки.
+          example: "USER_EXISTS"
+        message:
+          type: string
+          description: Человеко-читаемое сообщение, которое можно показать пользователю.
+          example: "User exists!"
+        field:
+          type: string
+          nullable: true
+          description: |
+            Имя поля, к которому относится ошибка валидации.
+            Может отсутствовать для общих ошибок (например, `INTERNAL_ERROR`).
+          example: "userName"

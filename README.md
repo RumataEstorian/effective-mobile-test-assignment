@@ -2,7 +2,7 @@
 
 Решение состоит из трёх задач: BPMN-моделирование процесса, требования к фиче в формате User Story / Use Case, REST API + алгоритм бэкенда.
 
-> **Статус:** Задачи 1 и 2 готовы. Задача 3 в работе — будет добавлена отдельным коммитом.
+> **Статус:** Все три задачи готовы.
 
 ## Структура репозитория
 
@@ -15,8 +15,12 @@
 │   ├── process_diagram.png                ← превью схемы для GitHub
 │   └── notes.md                           ← описание процесса + 10 вопросов и противоречий + предложения для TO-BE
 │
-└── task2_user_story/                    Задача 2. Фича «Публикация товара на маркетплейсе»
-    └── README.md                          ← User Story / декомпозиция / Use Cases / Acceptance Criteria / state diagrams / Activity diagrams / открытые вопросы
+├── task2_user_story/                    Задача 2. Фича «Публикация товара на маркетплейсе»
+│   └── README.md                          ← User Story / декомпозиция / Use Cases / Acceptance Criteria / state diagrams / Activity diagrams / открытые вопросы
+│
+└── task3_api/                           Задача 3. REST API регистрации + алгоритм бэкенда
+    ├── README.md                          ← описание API в табличном виде + 12-шаговый алгоритм + Mermaid flow-диаграмма + 10 открытых вопросов
+    └── api_spec.yaml                      ← полная OpenAPI 3.0 спецификация
 ```
 
 ## Как просмотреть решение
@@ -27,6 +31,8 @@
 | **`task1_bpmn/process.bpmn`** | [Camunda Modeler](https://camunda.com/download/modeler/) (desktop) или [demo.bpmn.io](https://demo.bpmn.io/) (перетащить файл в окно браузера) |
 | **`task1_bpmn/process_diagram.png`** | любой просмотрщик изображений / прямо в GitHub |
 | **`task2_user_story/README.md`** | GitHub. Mermaid-диаграммы (state, activity) рендерятся прямо в превью |
+| **`task3_api/README.md`** | GitHub. Mermaid flow-диаграмма алгоритма рендерится в превью |
+| **`task3_api/api_spec.yaml`** | [editor.swagger.io](https://editor.swagger.io/) (File → Import file) для интерактивного просмотра, или прямо в GitHub как текст |
 
 ## Краткое содержание
 
@@ -54,3 +60,21 @@
 **Ключевые продуктовые решения:** pull-модель модерации (модератор работает в дашборде, не получает email на каждую карточку); один активный EditRequest за раз с заменой через `withdrawn` (паттерн «force-push»); многоуровневая стратегия сохранения черновика (автосейв + localStorage + recovery); уведомления продавцу через 3 канала (in-app + email + SMS на критичных причинах).
 
 Подробности — в `task2_user_story/README.md`.
+
+### Задача 3 — REST API регистрации + алгоритм бэкенда
+
+Описание API эндпоинта, который вызывается фронтом при нажатии кнопки **Register** на форме регистрации Book Store (по приложенным к заданию скриншотам).
+
+**3.1 — REST API.** `POST /api/v1/users/register`. Описаны 5 входных полей (`firstName`, `lastName`, `userName`, `password`, `recaptchaToken`), формат успешного ответа `201 Created`, формат ошибок и **6 кодов ошибок** с явным указанием класса (клиент / сервер):
+- `400 VALIDATION_ERROR` — нарушение длины/формата/обязательности
+- `400 WEAK_PASSWORD` — пароль не соответствует политике сложности
+- `400 RECAPTCHA_FAILED` — капча не пройдена
+- `409 USER_EXISTS` — `userName` занят
+- `429 RATE_LIMITED` — слишком много попыток с одного IP
+- `500 INTERNAL_ERROR` — серверная ошибка
+
+Все три текста сообщений с приложенных скриншотов учтены дословно. Описание дано двумя способами: таблицами в `README.md` и полной OpenAPI 3.0 спецификацией в `api_spec.yaml`.
+
+**3.2 — Алгоритм.** 12-шаговый flow обработки запроса на бэкенде: парсинг JSON → rate limiting → валидация структуры → валидация формата → проверка политики пароля → верификация reCAPTCHA через Google API → проверка уникальности `userName` → bcrypt-хеш → генерация UUID → INSERT в транзакции (с обработкой race condition по UNIQUE-индексу) → постобработка (event в очередь) → ответ `201`. К алгоритму приложена Mermaid flow-диаграмма для визуальной сверки + 10 открытых вопросов заказчику (от поля email до OAuth-регистрации).
+
+Подробности — в `task3_api/README.md` и `task3_api/api_spec.yaml`.
